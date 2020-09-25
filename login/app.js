@@ -25,7 +25,7 @@ router.post('/login',async ctx => {
     const username = ctx.request.body.username
     const password = ctx.request.body.password
     const radio = ctx.request.body.radio
-    if(radio==='1'){
+    if(radio ==='1'){
     var sql = `SELECT * FROM user where username = '${username}' and password= '${password}'`}
     else{ 
         var sql = `SELECT * FROM manager where username = '${username}' and password= '${password}'`
@@ -36,7 +36,8 @@ router.post('/login',async ctx => {
     if(data.length > 0){
         ctx.body = {
             code:200,
-            tips:'登录成功'
+            tips:'登录成功',
+            id :data[0].id
         }
     }else{
         ctx.body = {
@@ -312,6 +313,49 @@ router.put('/editpassword', async ctx => {
         }
     }
 });
+//用户修改密码
+router.put('/edituserpassword', async ctx => {
+    const password = ctx.request.body.password;
+    const id = ctx.request.body.id;
+    console.log(password,id);
+    const sql = `UPDATE user SET password = '${password}' WHERE id = '${id}';`
+        const [data] = await con.query(sql)
+    if (data.affectedRows > 0) {
+        ctx.body = {
+            code: 200,
+            tips: '修改成功',
+            data
+        }
+    } else {
+        ctx.body = {
+            code: 400,
+            tips: '修改失败'
+        }
+    }
+});
+//获取用户个人信息
+router.get('/getpersonalmessage',async ctx =>{
+    const id = ctx.request.query.id
+    // console.log(id);
+    const sql = `SELECT * FROM user WHERE id = '${id}';`
+    const [data] = await con.query(sql)
+    console.log(data);
+  if(data.affectedRows >= 0){
+    ctx.body = {
+        code:200,
+        tips:'获取数据成功',
+        data
+       
+    }
+}else{
+    ctx.body = {
+        code:400,
+        tips:'获取数据失败'
+    } 
+}
+})
+
+
 
 app.use(router.routes())
 app.listen(80,() => {
