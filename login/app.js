@@ -1,5 +1,4 @@
 (async function run() {
-
 const koa2 = require('koa2')
 const Router = require('koa-router')
 const Mysql = require('promise-mysql2')
@@ -10,6 +9,7 @@ const cors = require("koa2-cors")
 app.use(cors()) //解决跨域问题
 
 const staticServer = require('koa-static');
+
 app.use(staticServer(__dirname , 'static'));
 app.use(Body())
 
@@ -18,7 +18,7 @@ const con = await Mysql.createConnection({
     user: 'root',
     port:'3308',
     password: '123456',
-    database: 'internet'
+    database: 'internet+++'
 })
 //登录
 router.post('/login',async ctx => {
@@ -28,7 +28,7 @@ router.post('/login',async ctx => {
     if(radio ==='1'){
     var sql = `SELECT * FROM user where username = '${username}' and password= '${password}'`}
     else{ 
-        var sql = `SELECT * FROM manager where username = '${username}' and password= '${password}'`
+        var sql = `SELECT * FROM administrator where username = '${username}' and password= '${password}'`
     }
     const [data] = await con.query(sql)
 
@@ -52,7 +52,6 @@ router.get('/getalluseraccount',async ctx =>{
     const pagenum = ctx.request.query.pagenum - 1
     const pagesize = ctx.request.query.pagesize
     const query = ctx.request.query.query
-    console.log(pagenum,pagesize,query);
     const sql = `SELECT * FROM user`
     if(query !== ''){
     var sql2  = `SELECT * FROM user WHERE username LIKE '%${query}'`
@@ -62,7 +61,6 @@ router.get('/getalluseraccount',async ctx =>{
     const [data] = await con.query(sql)
     const [data2] = await con.query(sql2)
 
-  console.log(data);
   if(data.length >= 0 && data2.length>=0){
     ctx.body = {
         code:200,
@@ -81,11 +79,11 @@ router.get('/getalluseraccount',async ctx =>{
 router.put('/updatestatus', async ctx => {
 
     const id = ctx.request.body.id;
-    const newstatus = ctx.request.body.status;
-    console.log(id,newstatus);
+    const newstate = ctx.request.body.state;
+    console.log(id,newstate);
     let sql =
-        `UPDATE user SET status='${newstatus}' WHERE ID=${id};`
-        const [data] = await con.query(sql)
+        `UPDATE user SET state='${newstate}' WHERE id = ${id}`
+    const [data] = await con.query(sql)
     if (data.affectedRows > 0) {
         ctx.body = {
             code: 200,
@@ -101,7 +99,7 @@ router.put('/updatestatus', async ctx => {
 });
 // 获取启用账户信息
 router.get('/getusingaccount',async ctx =>{
-    const sql = `SELECT * FROM user where user.status = 'true'`
+    const sql = `SELECT * FROM user where user.state = '0'`
   const [data] = await con.query(sql)
   console.log(data);
   if(data.length >= 0){
@@ -119,7 +117,7 @@ router.get('/getusingaccount',async ctx =>{
 })
 // 获取冻结账户信息
 router.get('/getfreezingaccount',async ctx =>{
-    const sql = `SELECT * FROM user where user.status = 'false'`
+    const sql = `SELECT * FROM user where user.state = '1'`
   const [data] = await con.query(sql)
   console.log(data);
   if(data.length >= 0){
@@ -137,7 +135,7 @@ router.get('/getfreezingaccount',async ctx =>{
 })
 //获取个人信息
 router.get('/getadminmessage',async ctx =>{
-    const sql = `SELECT * FROM manager`
+    const sql = `SELECT * FROM administrator`
   const [data] = await con.query(sql)
   console.log(data);
   if(data.length >= 0){
@@ -197,7 +195,7 @@ router.post('/adduser',async ctx =>{
 router.delete('/userdelete', async ctx => {
     const id = ctx.request.query.id;
      console.log(id)
-    const sql = `DELETE FROM user WHERE user.id = ${id}`;
+    const sql = `DELETE FROM user WHERE user.id = '${id}'`;
     const [data] = await con.query(sql)
 
     if (data.affectedRows > 0) {
@@ -295,10 +293,11 @@ router.delete('/newsdelete', async ctx => {
 });
 //管理员修改密码
 router.put('/editpassword', async ctx => {
-    const edit = ctx.request.body.password;
-    console.log(edit);
+    const password = ctx.request.body.password;
+    const id = ctx.request.body.id;
+    console.log(password,id);
     const sql =
-        `UPDATE manager SET password ='${edit}'  WHERE manager.username = 'admin';`
+        `UPDATE administrator SET password ='${password}'  WHERE id = '${id}';`
         const [data] = await con.query(sql)
     if (data.affectedRows > 0) {
         ctx.body = {
@@ -337,25 +336,46 @@ router.put('/edituserpassword', async ctx => {
 router.get('/getpersonalmessage',async ctx =>{
     const id = ctx.request.query.id
     // console.log(id);
-    const sql = `SELECT * FROM user WHERE id = '${id}';`
+    const sql = `SELECT * FROM user WHERE id = ${id};`
+    const data = await con.query(sql)
+    // console.log(data);
+    if(data){
+        ctx.body = {
+            code:200,
+            tips:'获取数据成功',
+            data
+        
+        }
+    }else{
+        ctx.body = {
+            code:400,
+            tips:'获取数据失败'
+        } 
+    }
+})
+//修改用户信息
+router.put('/changemessage',async ctx =>{
+    const form = ctx.request.body
+    console.log(form);
+    const sql = `UPDATE user SET username = '${form.username}',
+    password = '${form.password}', email = '${form.email}' , money = '${form.money}',phone = '${form.phone}',state= '${form.state}'
+    WHERE id = ${form.id}`
     const [data] = await con.query(sql)
     console.log(data);
-  if(data.affectedRows >= 0){
-    ctx.body = {
-        code:200,
-        tips:'获取数据成功',
-        data
-       
+    if(data.affectedRows > 0){
+        ctx.body = {
+            code:200,
+            tips:'获取数据成功'
+        }
+    }else{
+        ctx.body = {
+            code:400,
+            tips:'获取数据失败'
+        } 
     }
-}else{
-    ctx.body = {
-        code:400,
-        tips:'获取数据失败'
-    } 
-}
 })
-
-
+const userrouter = require('./userrouter.js')
+app.use(userrouter.routes());
 
 app.use(router.routes())
 app.listen(80,() => {
